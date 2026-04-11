@@ -11,7 +11,7 @@ def test_make_response_basic():
 def test_make_response_quick_replies_labels():
     result = make_response("test")
     labels = [qr["label"] for qr in result["template"]["quickReplies"]]
-    assert labels == ["오늘의 말씀", "한 구절 묵상", "오늘의 기도"]
+    assert labels == ["오늘의 말씀", "오늘의 묵상", "오늘의 기도"]
 
 
 def test_make_response_quick_replies_action():

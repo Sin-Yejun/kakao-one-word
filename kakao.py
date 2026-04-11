@@ -1,6 +1,6 @@
 QUICK_REPLIES = [
     {"label": "오늘의 말씀", "action": "message", "messageText": "오늘의 말씀"},
-    {"label": "한 구절 묵상", "action": "message", "messageText": "한 구절 묵상"},
+    {"label": "오늘의 묵상", "action": "message", "messageText": "오늘의 묵상"},
     {"label": "오늘의 기도", "action": "message", "messageText": "오늘의 기도"},
 ]
 

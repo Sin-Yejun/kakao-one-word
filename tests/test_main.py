@@ -32,6 +32,7 @@ async def test_webhook_today_bible(sample_data):
         assert resp.status_code == 200
         body = resp.json()
         text = body["template"]["outputs"][0]["simpleText"]["text"]
+        assert "하나님을 인정하는 삶" in text
         assert "창세기 14장" in text
         assert "지극히 높으신" in text
         assert len(body["template"]["quickReplies"]) == 3
@@ -42,8 +43,9 @@ async def test_webhook_meditation(sample_data):
     with patch("main.load_json", return_value=sample_data), \
          patch("main.get_today", return_value="2026-04-11"):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp = await client.post("/webhook", json=make_kakao_request("한 구절 묵상"))
+            resp = await client.post("/webhook", json=make_kakao_request("오늘의 묵상"))
         text = resp.json()["template"]["outputs"][0]["simpleText"]["text"]
+        assert "하나님을 인정하는 삶" in text
         assert "아브람" in text
         assert "교훈" in text
 
@@ -55,7 +57,7 @@ async def test_webhook_prayer(sample_data):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.post("/webhook", json=make_kakao_request("오늘의 기도"))
         text = resp.json()["template"]["outputs"][0]["simpleText"]["text"]
-        assert "하나님" in text
+        assert "하나님을 인정하는 삶" in text
         assert "함께 기도" in text
 
 
