@@ -17,7 +17,7 @@
 ```
 [분당우리교회 웹사이트]
         │
-        ▼  매일 05:00 KST 크롤링
+        ▼  GitHub Actions (05:00, 06:00 KST)
    ┌──────────┐
    │ crawler  │  httpx + BeautifulSoup4
    └────┬─────┘
@@ -32,9 +32,9 @@
    └──────────┘      └──────────┘
 ```
 
-- 매일 오전 5시에 [분당우리교회 묵상 페이지](https://www.woorichurch.org)를 크롤링하여 JSON 파일에 저장
+- GitHub Actions가 매일 오전 5시, 6시(KST)에 `/crawl` 엔드포인트를 호출하여 크롤링
 - 카카오 오픈빌더 웹훅으로 요청이 오면 JSON에서 오늘 데이터를 읽어 응답
-- 서버 시작 시 오늘 데이터가 없으면 즉시 크롤링 실행
+- 데이터가 없으면 웹훅에서 fallback으로 즉시 크롤링 시도
 
 ## 기술 스택
 
@@ -43,7 +43,7 @@
 | 언어 | Python 3.11 |
 | 웹 프레임워크 | FastAPI |
 | 크롤링 | httpx + BeautifulSoup4 |
-| 스케줄러 | APScheduler |
+| 스케줄러 | GitHub Actions Cron |
 | 데이터 저장 | JSON 파일 (DB 없음) |
 | 배포 | Railway |
 | 테스트 | pytest + pytest-asyncio |
@@ -51,7 +51,7 @@
 ## 프로젝트 구조
 
 ```
-├── main.py          # FastAPI 앱, 웹훅 엔드포인트, 스케줄러
+├── main.py          # FastAPI 앱, 웹훅/크롤링 엔드포인트
 ├── crawler.py       # 크롤링, HTML 파싱, JSON 저장/로드
 ├── kakao.py         # 카카오 응답 포맷 헬퍼
 ├── tests/
