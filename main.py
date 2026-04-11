@@ -56,6 +56,7 @@ async def health_check():
 async def webhook(request: Request):
     body = await request.json()
     utterance = body.get("userRequest", {}).get("utterance", "")
+    block_name = body.get("intent", {}).get("name", "")
 
     today = get_today()
     data = load_json()
@@ -69,11 +70,11 @@ async def webhook(request: Request):
 
     bible_ref = today_data.get('bible_ref', today_data['bible_book'])
 
-    if utterance == "오늘의 말씀":
+    if block_name == "오늘의 말씀" or utterance == "오늘의 말씀":
         text = f"📖 {date_label} {title} — {bible_ref}\n\n{today_data['bible_verse']}"
-    elif utterance == "오늘의 묵상":
+    elif block_name == "오늘의 묵상" or utterance == "오늘의 묵상":
         text = f"✍️ {date_label} {title}\n\n{today_data['meditation']}\n\n💬 묵상질문\n\n{today_data['question']}"
-    elif utterance == "오늘의 기도":
+    elif block_name == "오늘의 기도" or utterance == "오늘의 기도":
         text = f"🙏 {date_label} {title}\n\n{today_data['prayer']}"
     else:
         text = "아래 버튼을 눌러 오늘의 묵상을 확인해 보세요 😊"
