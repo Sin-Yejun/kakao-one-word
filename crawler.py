@@ -34,9 +34,13 @@ def save_to_json(date_str: str, data: dict) -> None:
 
 def _extract_text_with_br(tag) -> str:
     """Replace <br> tags with newlines and return the resulting text."""
+    import re
     for br in tag.find_all("br"):
         br.replace_with("\n")
-    return tag.get_text(separator="")
+    text = tag.get_text(separator="")
+    # 연속 빈 줄을 하나로 정리
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text
 
 
 def _find_section_by_h4(soup, title: str):
