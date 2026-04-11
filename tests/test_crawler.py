@@ -85,11 +85,12 @@ def test_parse_meditation_bible_book():
     assert result["bible_book"] == "창세기 14장"
 
 
-def test_parse_meditation_bible_verse_has_gaeyeok():
+def test_parse_meditation_bible_verse_both_versions():
     result = parse_meditation(SAMPLE_HTML)
     assert "지극히 높으신" in result["bible_verse"]
-    assert "[개역개정]" not in result["bible_verse"]
-    assert "[새번역]" not in result["bible_verse"]
+    assert "[개역개정]" in result["bible_verse"]
+    assert "[새번역]" in result["bible_verse"]
+    assert "가장 높으신 하나님을 찬양하시오" in result["bible_verse"]
 
 
 def test_parse_meditation_meditation():
@@ -105,10 +106,11 @@ def test_parse_meditation_question_has_linebreaks():
     assert "\n" in result["question"]
 
 
-def test_parse_meditation_prayer_excludes_together():
+def test_parse_meditation_prayer_includes_together():
     result = parse_meditation(SAMPLE_HTML)
     assert "하나님" in result["prayer"]
-    assert "함께 기도" not in result["prayer"]
+    assert "함께 기도" in result["prayer"]
+    assert "양육과정" in result["prayer"]
 
 
 def test_parse_meditation_missing_section():

@@ -78,11 +78,17 @@ def parse_meditation(html: str) -> dict:
     if not verse_div:
         raise ValueError("Missing div.cont in '오늘의 한 구절'")
     verse_raw = _extract_text_with_br(verse_div)
-    # Extract only [개역개정] portion
-    verse_raw = verse_raw.replace("[개역개정]", "", 1)
-    if "[새번역]" in verse_raw:
-        verse_raw = verse_raw.split("[새번역]")[0]
-    bible_verse = verse_raw.strip()
+    # 개역개정과 새번역 모두 포함, 레이블을 깔끔하게 포맷팅
+    lines = [line.strip() for line in verse_raw.strip().split("\n") if line.strip()]
+    formatted = []
+    for line in lines:
+        if line == "[개역개정]":
+            formatted.append("[개역개정]")
+        elif line == "[새번역]":
+            formatted.append("\n[새번역]")
+        else:
+            formatted.append(line)
+    bible_verse = "\n".join(formatted).strip()
 
     # meditation: section with h4="한 구절 묵상"
     med_section = _find_section_by_h4(soup, "한 구절 묵상")
@@ -110,14 +116,15 @@ def parse_meditation(html: str) -> dict:
     if not prayer_div:
         raise ValueError("Missing div.cont in '심정이 통하는 기도'")
     prayer_raw = _extract_text_with_br(prayer_div)
-    # Split on "함께 기도" line and take text before it
-    lines = prayer_raw.split("\n")
-    prayer_lines = []
+    # "함께 기도" 부분도 포함, 줄바꿈 정리
+    lines = [line.strip() for line in prayer_raw.strip().split("\n") if line.strip()]
+    formatted = []
     for line in lines:
-        if line.strip().startswith("함께 기도"):
-            break
-        prayer_lines.append(line)
-    prayer = "\n".join(prayer_lines).strip()
+        if line.startswith("함께 기도"):
+            formatted.append("\n" + line)
+        else:
+            formatted.append(line)
+    prayer = "\n".join(formatted).strip()
 
     return {
         "title": title,
