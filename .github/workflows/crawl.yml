@@ -14,4 +14,6 @@ jobs:
       - name: Trigger crawl
         run: |
           curl -f -s -o /dev/null -w "%{http_code}" \
-            "${{ secrets.RAILWAY_URL }}/crawl?secret=${{ secrets.CRON_SECRET }}"
+            -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.RAILWAY_URL }}/crawl"

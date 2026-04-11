@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Header, Request
 from fastapi.responses import JSONResponse
 
 from kakao import make_response, make_error_response
@@ -29,9 +29,9 @@ async def health_check():
     return {"status": "ok"}
 
 
-@app.get("/crawl")
-async def crawl(secret: str = ""):
-    if CRON_SECRET and secret != CRON_SECRET:
+@app.post("/crawl")
+async def crawl(authorization: str = Header("")):
+    if not CRON_SECRET or authorization != f"Bearer {CRON_SECRET}":
         return JSONResponse({"error": "unauthorized"}, status_code=403)
     success = await crawl_and_save()
     return {"success": success}
