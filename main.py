@@ -1,18 +1,46 @@
 import logging
+from contextlib import asynccontextmanager
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from fastapi import FastAPI, Request
 
 from kakao import make_response, make_error_response
-from crawler import load_json
+from crawler import load_json, crawl_and_save
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 KST = ZoneInfo("Asia/Seoul")
 
-app = FastAPI()
+scheduler = AsyncIOScheduler(timezone="Asia/Seoul")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 시작: 오늘 데이터 없으면 즉시 크롤링
+    today = get_today()
+    data = load_json()
+    if today not in data:
+        logger.info("오늘(%s) 데이터 없음 — 즉시 크롤링 시작", today)
+        await crawl_and_save()
+
+    # 스케줄러 등록: 05:00, 06:00, 07:00 KST
+    for hour in [5, 6, 7]:
+        scheduler.add_job(crawl_and_save, CronTrigger(hour=hour, minute=0))
+    scheduler.start()
+    logger.info("스케줄러 시작됨 (05:00, 06:00, 07:00 KST)")
+
+    yield
+
+    # 종료
+    scheduler.shutdown()
+    logger.info("스케줄러 종료됨")
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 def get_today() -> str:
