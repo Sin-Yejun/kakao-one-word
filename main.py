@@ -66,7 +66,7 @@ async def webhook(request: Request):
         return make_error_response()
 
     title = today_data['title']
-    date_label = today.replace("-", ".")
+    date_label = f"[{today.replace('-', '.')}]"
 
     bible_ref = today_data.get('bible_ref', today_data['bible_book'])
 
