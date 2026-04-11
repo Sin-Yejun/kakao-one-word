@@ -67,8 +67,10 @@ async def webhook(request: Request):
     title = today_data['title']
     date_label = today.replace("-", ".")
 
+    bible_ref = today_data.get('bible_ref', today_data['bible_book'])
+
     if utterance == "오늘의 말씀":
-        text = f"📖 {date_label} {title} — {today_data['bible_book']}\n\n{today_data['bible_verse']}"
+        text = f"📖 {date_label} {title} — {bible_ref}\n\n{today_data['bible_verse']}"
     elif utterance == "오늘의 묵상":
         text = f"✍️ {date_label} {title}\n\n{today_data['meditation']}\n\n💬 묵상질문\n\n{today_data['question']}"
     elif utterance == "오늘의 기도":

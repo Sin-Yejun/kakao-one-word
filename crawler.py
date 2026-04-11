@@ -65,14 +65,20 @@ def parse_meditation(html: str) -> dict:
         raise ValueError("Missing title (p.sbj)")
     title = sbj.get_text(strip=True)
 
-    # bible_book: first p.word, text after ":"
-    word = meditation_section.find("p", class_="word")
-    if not word:
+    # bible_book + bible_ref: two p.word elements
+    words = meditation_section.find_all("p", class_="word")
+    if not words:
         raise ValueError("Missing bible_book (p.word)")
-    word_text = word.get_text(strip=True)
+    word_text = words[0].get_text(strip=True)
     if ":" not in word_text:
         raise ValueError("Unexpected bible_book format")
     bible_book = word_text.split(":", 1)[1].strip()
+    # bible_ref: 두 번째 p.word에서 절 정보 추출 (예: "창세기 14장 20절")
+    bible_ref = ""
+    if len(words) > 1:
+        ref_text = words[1].get_text(strip=True)
+        if ":" in ref_text:
+            bible_ref = ref_text.split(":", 1)[1].strip()
 
     # bible_verse: section with h4="오늘의 한 구절", [개역개정] portion only
     verse_section = _find_section_by_h4(soup, "오늘의 한 구절")
@@ -133,6 +139,7 @@ def parse_meditation(html: str) -> dict:
     return {
         "title": title,
         "bible_book": bible_book,
+        "bible_ref": bible_ref,
         "bible_verse": bible_verse,
         "meditation": meditation,
         "question": question,
