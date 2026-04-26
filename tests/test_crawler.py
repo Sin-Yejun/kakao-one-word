@@ -93,6 +93,11 @@ def test_parse_meditation_bible_verse_both_versions():
     assert "가장 높으신 하나님을 찬양하시오" in result["bible_verse"]
 
 
+def test_parse_meditation_summary():
+    result = parse_meditation(SAMPLE_HTML)
+    assert result["summary"] == "아브람은 롯을 구하기 위한 전쟁에서 승리한 후 하나님을 찬양합니다."
+
+
 def test_parse_meditation_meditation():
     result = parse_meditation(SAMPLE_HTML)
     assert "아브람" in result["meditation"]

@@ -12,6 +12,7 @@ def sample_data():
             "title": "하나님을 인정하는 삶",
             "bible_book": "창세기 14장",
             "bible_ref": "창세기 14장 20절",
+            "summary": "아브람은 롯을 구하기 위한 전쟁에서 승리한 후 하나님을 찬양합니다.",
             "bible_verse": "[개역개정]\n20 너희 대적을 네 손에 붙이신 지극히 높으신 하나님을 찬송할지로다\n\n[새번역]\n20 아브람은 들으시오.",
             "meditation": "아브람은 롯을 구하기 위한 전쟁에서 승리했습니다.",
             "question": "1. 말씀을 통해 하나님이 오늘 나에게 주신 교훈은 무엇인가요?",
@@ -36,6 +37,7 @@ async def test_webhook_today_bible(sample_data):
         assert "하나님을 인정하는 삶" in text
         assert "창세기 14장" in text
         assert "지극히 높으신" in text
+        assert "전쟁에서 승리한 후" in text
         assert len(body["template"]["quickReplies"]) == 3
 
 

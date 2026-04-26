@@ -80,6 +80,14 @@ def parse_meditation(html: str) -> dict:
         if ":" in ref_text:
             bible_ref = ref_text.split(":", 1)[1].strip()
 
+    # summary: section with h4="본문 개요"
+    summary = ""
+    summary_section = _find_section_by_h4(soup, "본문 개요")
+    if summary_section:
+        summary_div = summary_section.find("div", class_="cont")
+        if summary_div:
+            summary = _extract_text_with_br(summary_div).strip()
+
     # bible_verse: section with h4="오늘의 한 구절", [개역개정] portion only
     verse_section = _find_section_by_h4(soup, "오늘의 한 구절")
     if not verse_section:
@@ -140,6 +148,7 @@ def parse_meditation(html: str) -> dict:
         "title": title,
         "bible_book": bible_book,
         "bible_ref": bible_ref,
+        "summary": summary,
         "bible_verse": bible_verse,
         "meditation": meditation,
         "question": question,
