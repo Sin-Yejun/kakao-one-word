@@ -1,19 +1,43 @@
 name: Daily Crawl
 
+# 크롤링 결과를 레포에 커밋하면 Vercel 이 자동으로 재배포한다.
+# 서버는 파일을 읽기만 하므로 별도 크롤 엔드포인트가 필요 없다.
 on:
   schedule:
     # KST 05:00 = UTC 20:00 (전날)
     - cron: "0 20 * * *"
     # KST 06:00 = UTC 21:00 (전날)
     - cron: "0 21 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   crawl:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - name: Trigger crawl
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: 오늘의 묵상 크롤링
+        run: python crawler.py
+
+      - name: 변경분 커밋
         run: |
-          curl -f -s -o /dev/null -w "%{http_code}" \
-            -X POST \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "${{ secrets.RAILWAY_URL }}/crawl"
+          if git diff --quiet -- data/meditation.json; then
+            echo "변경 없음 — 커밋 생략"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/meditation.json
+          git commit -m "chore: 오늘의 묵상 데이터 갱신"
+          git push

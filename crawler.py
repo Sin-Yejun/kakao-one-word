@@ -10,7 +10,8 @@ from zoneinfo import ZoneInfo
 logger = logging.getLogger(__name__)
 
 KST = ZoneInfo("Asia/Seoul")
-DATA_PATH = Path("data/meditation.json")
+# 서버리스에서는 작업 디렉터리가 프로젝트 루트가 아닐 수 있어 파일 기준 절대경로를 쓴다.
+DATA_PATH = Path(__file__).resolve().parent / "data" / "meditation.json"
 CRAWL_URL = "https://www.woorichurch.org/modu/ov/ov_meditation.asp?ov_date={date}&Page=1"
 
 
@@ -180,3 +181,12 @@ async def crawl_and_save() -> bool:
     except Exception:
         logger.exception("Failed to crawl and save meditation.")
         return False
+
+
+if __name__ == "__main__":
+    # GitHub Actions 가 이걸 실행해서 data/meditation.json 을 갱신하고 커밋한다.
+    import asyncio
+    import sys
+
+    logging.basicConfig(level=logging.INFO)
+    sys.exit(0 if asyncio.run(crawl_and_save()) else 1)

@@ -1,23 +1,18 @@
-import asyncio
 import logging
-import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from fastapi import FastAPI, Header, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Request
 
 from kakao import make_response, make_error_response
-from crawler import load_json, crawl_and_save
+from crawler import load_json, crawl_today
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 KST = ZoneInfo("Asia/Seoul")
-CRON_SECRET = os.environ.get("CRON_SECRET", "")
 
 app = FastAPI()
-_crawl_lock = asyncio.Lock()
 
 
 def get_today() -> str:
@@ -27,14 +22,6 @@ def get_today() -> str:
 @app.get("/")
 async def health_check():
     return {"status": "ok"}
-
-
-@app.post("/crawl")
-async def crawl(authorization: str = Header("")):
-    if not CRON_SECRET or authorization != f"Bearer {CRON_SECRET}":
-        return JSONResponse({"error": "unauthorized"}, status_code=403)
-    success = await crawl_and_save()
-    return {"success": success}
 
 
 @app.post("/webhook")
@@ -48,16 +35,13 @@ async def webhook(request: Request):
     today_data = data.get(today)
 
     if not today_data:
-        async with _crawl_lock:
-            data = load_json()
-            today_data = data.get(today)
-            if not today_data:
-                logger.info("오늘(%s) 데이터 없음 — fallback 크롤링 시도", today)
-                success = await crawl_and_save()
-                if success:
-                    data = load_json()
-                    today_data = data.get(today)
-        if not today_data:
+        # 배포에 포함된 데이터가 오래됐을 때를 위한 보험. 서버 디스크는 읽기 전용이라
+        # 저장하지 않고 이번 응답에만 쓴다.
+        logger.info("오늘(%s) 데이터 없음 — 즉석 크롤링 시도", today)
+        try:
+            today_data = await crawl_today(today)
+        except Exception:
+            logger.exception("즉석 크롤링 실패")
             return make_error_response()
 
     title = today_data['title']

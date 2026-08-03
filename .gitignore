@@ -1,7 +1,7 @@
 .omc/
 __pycache__/
 *.pyc
-data/meditation.json
 .env
 .venv/
 .pytest_cache/
+.vercel/

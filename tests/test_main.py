@@ -75,13 +75,36 @@ async def test_webhook_unknown_utterance(sample_data):
 
 
 @pytest.mark.asyncio
-async def test_webhook_no_data_today():
+async def test_webhook_no_data_falls_back_to_live_crawl(sample_data):
+    """저장된 데이터가 없으면 그 자리에서 크롤링해 응답한다 (디스크에 쓰지 않는다)."""
+    entry = sample_data["2026-04-11"]
     with patch("main.load_json", return_value={}), \
-         patch("main.get_today", return_value="2026-04-11"):
+         patch("main.get_today", return_value="2026-04-11"), \
+         patch("main.crawl_today", return_value=entry) as crawl:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post("/webhook", json=make_kakao_request("오늘의 말씀"))
+        text = resp.json()["template"]["outputs"][0]["simpleText"]["text"]
+        assert entry["title"] in text
+        crawl.assert_awaited_once_with("2026-04-11")
+
+
+@pytest.mark.asyncio
+async def test_webhook_no_data_and_crawl_fails():
+    with patch("main.load_json", return_value={}), \
+         patch("main.get_today", return_value="2026-04-11"), \
+         patch("main.crawl_today", side_effect=RuntimeError("boom")):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.post("/webhook", json=make_kakao_request("오늘의 말씀"))
         text = resp.json()["template"]["outputs"][0]["simpleText"]["text"]
         assert "준비 중" in text
+
+
+@pytest.mark.asyncio
+async def test_crawl_endpoint_is_gone():
+    """크롤링은 GitHub Actions가 맡는다. 서버에는 쓰기 경로가 없어야 한다."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post("/crawl")
+    assert resp.status_code == 404
 
 
 @pytest.mark.asyncio
