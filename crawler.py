@@ -3,9 +3,10 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
-import httpx
-from bs4 import BeautifulSoup
 from zoneinfo import ZoneInfo
+
+# httpx / bs4 는 크롤링 경로에서만 쓴다. 웹훅은 JSON 만 읽으므로
+# 콜드 스타트 비용을 아끼려고 모듈 최상단에서 불러오지 않는다.
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,8 @@ def _find_section_by_h4(soup, title: str):
 
 def parse_meditation(html: str) -> dict:
     """Parse meditation HTML and return a dict with 6 keys."""
+    from bs4 import BeautifulSoup
+
     soup = BeautifulSoup(html, "html.parser")
 
     # title
@@ -159,6 +162,8 @@ def parse_meditation(html: str) -> dict:
 
 async def crawl_today(date_str: str) -> dict:
     """Fetch and parse meditation for the given date string (YYYY-MM-DD)."""
+    import httpx
+
     url = CRAWL_URL.format(date=date_str)
     async with httpx.AsyncClient() as client:
         response = await client.get(url)

@@ -75,24 +75,49 @@ async def test_webhook_unknown_utterance(sample_data):
 
 
 @pytest.mark.asyncio
-async def test_webhook_no_data_falls_back_to_live_crawl(sample_data):
-    """저장된 데이터가 없으면 그 자리에서 크롤링해 응답한다 (디스크에 쓰지 않는다)."""
-    entry = sample_data["2026-04-11"]
-    with patch("main.load_json", return_value={}), \
-         patch("main.get_today", return_value="2026-04-11"), \
-         patch("main.crawl_today", return_value=entry) as crawl:
+async def test_webhook_no_data_serves_most_recent(sample_data):
+    """오늘 데이터가 없으면 보관 중인 가장 최근 날짜를 그 날짜 그대로 서빙한다."""
+    with patch("main.load_json", return_value=sample_data), \
+         patch("main.get_today", return_value="2026-04-13"):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.post("/webhook", json=make_kakao_request("오늘의 말씀"))
         text = resp.json()["template"]["outputs"][0]["simpleText"]["text"]
-        assert entry["title"] in text
-        crawl.assert_awaited_once_with("2026-04-11")
+        assert sample_data["2026-04-11"]["title"] in text
+        # 날짜는 실제 데이터 날짜로 표기해야 한다 — 오늘 것인 양 보이면 안 된다.
+        assert "[2026.04.11]" in text
+        assert "[2026.04.13]" not in text
 
 
 @pytest.mark.asyncio
-async def test_webhook_no_data_and_crawl_fails():
+async def test_webhook_never_crawls_in_request_path(sample_data):
+    """카카오 5초 제한 때문에 요청 경로에서 외부 크롤링을 하면 안 된다."""
+    with patch("main.load_json", return_value=sample_data), \
+         patch("main.get_today", return_value="2026-04-13"), \
+         patch("crawler.crawl_today") as crawl:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post("/webhook", json=make_kakao_request("오늘의 말씀"))
+        assert resp.status_code == 200
+        crawl.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_webhook_ignores_future_dated_entries(sample_data):
+    """오늘보다 미래 날짜 데이터를 '최근'으로 착각해 내보내지 않는다."""
+    data = dict(sample_data)
+    data["2026-04-20"] = {**sample_data["2026-04-11"], "title": "미래 데이터"}
+    with patch("main.load_json", return_value=data), \
+         patch("main.get_today", return_value="2026-04-13"):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post("/webhook", json=make_kakao_request("오늘의 말씀"))
+        text = resp.json()["template"]["outputs"][0]["simpleText"]["text"]
+        assert "미래 데이터" not in text
+        assert "[2026.04.11]" in text
+
+
+@pytest.mark.asyncio
+async def test_webhook_no_data_at_all():
     with patch("main.load_json", return_value={}), \
-         patch("main.get_today", return_value="2026-04-11"), \
-         patch("main.crawl_today", side_effect=RuntimeError("boom")):
+         patch("main.get_today", return_value="2026-04-11"):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.post("/webhook", json=make_kakao_request("오늘의 말씀"))
         text = resp.json()["template"]["outputs"][0]["simpleText"]["text"]

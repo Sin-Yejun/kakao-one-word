@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 from fastapi import FastAPI, Request
 
 from kakao import make_response, make_error_response
-from crawler import load_json, crawl_today
+from crawler import load_json
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -32,20 +32,22 @@ async def webhook(request: Request):
 
     today = get_today()
     data = load_json()
+    entry_date = today
     today_data = data.get(today)
 
     if not today_data:
-        # 배포에 포함된 데이터가 오래됐을 때를 위한 보험. 서버 디스크는 읽기 전용이라
-        # 저장하지 않고 이번 응답에만 쓴다.
-        logger.info("오늘(%s) 데이터 없음 — 즉석 크롤링 시도", today)
-        try:
-            today_data = await crawl_today(today)
-        except Exception:
-            logger.exception("즉석 크롤링 실패")
+        # 카카오는 5초 안에 응답을 받아야 해서 이 자리에서 크롤링할 수 없다.
+        # 대신 보관 중인 가장 최근 날짜를 그 날짜 그대로 보여준다.
+        past = [d for d in data if d <= today]
+        if not past:
+            logger.error("서빙할 데이터가 전혀 없음 (오늘=%s)", today)
             return make_error_response()
+        entry_date = max(past)
+        today_data = data[entry_date]
+        logger.warning("오늘(%s) 데이터 없음 — %s 데이터로 대체", today, entry_date)
 
     title = today_data['title']
-    date_label = f"[{today.replace('-', '.')}]"
+    date_label = f"[{entry_date.replace('-', '.')}]"
 
     bible_ref = today_data.get('bible_ref', today_data['bible_book'])
 

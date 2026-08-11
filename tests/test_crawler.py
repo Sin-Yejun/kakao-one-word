@@ -132,7 +132,8 @@ async def test_crawl_today_success():
     mock_response.text = SAMPLE_HTML
     mock_response.charset_encoding = "utf-8"
 
-    with patch("crawler.httpx.AsyncClient") as mock_client_cls:
+    # httpx 는 crawl_today 안에서 import 하므로 httpx 모듈 자체를 패치한다.
+    with patch("httpx.AsyncClient") as mock_client_cls:
         mock_client = AsyncMock()
         mock_client.get.return_value = mock_response
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
